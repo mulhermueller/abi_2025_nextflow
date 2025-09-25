@@ -9,62 +9,50 @@ params.downloadURL = "https://tinyurl.com/cqbatch1" //this one defines a downloa
 process downloadFile {
 	// storeDir is a temporary folder where you store  
 	storeDir params.temp
-	// publishDir is the directory where the output has to be saved, you can create a directory "output" beforehand
-	// usually use always absolute paths 
-	// you can use projectDir, which is the working folder
-	// if you want to use this variable "projectDir" you have to write it like this:
-	// publishDir "${projectDir}/output/", mode: "copy", overwrite: true
-	// publishDir "/home/muellerlui/abi_2025_nextflow/output/", mode: "copy", overwrite: true
-	// publishDir params.out, mode: "copy", overwrite: true
-
-	// define the output, if you want to save it somewhere
 	output:
 		path "batch1.fasta" // this is what is important for others
-
 	// What should the worker do?
 	// download a file from the downloadURL and name it batch1.fasta
 	""" 
 	wget ${params.downloadURL} -O batch1.fasta 	
 	"""
 }
-process countSeqs {
-	//publishDir "/home/muellerlui/abi_2025_nextflow/output/", mode: "copy", overwrite: true
-	publishDir params.out, mode: "copy", overwrite: true
 
-	input: //Where does the worker before me put their things
-		path fastafile
-	
-	// define the output, if you want to save it somewhere
-	output:
-		path "numseqs.txt"
-	
-	// What should the worker do?
-	// takes the fastafile from input count the lines and put it into numseqs.txt
-	"""
-	grep ">" ${fastafile} | wc -l > numseqs.txt
-	"""
-}
-process splitFasta {
-	publishDir params.out, mode: "copy", overwrite:true
-
+process splitSeqs {
+	//publishDir params.out, mode: "copy", overwrite:true
 	input:
 		path fastafile
-	
 	output:
 		path "seq_*.fasta"
-	
 	"""
 	 split --lines=2 -d --additional-suffix=.fasta ${fastafile} "seq_"
 	"""
+}
 
-	
+process countRepeats{
+	//publishDir params.out, mode: "copy", overwrite:true
+	input:
+		path fastafile
+	output:
+		path "${fastafile.getSimpleName()}_repeatcount.txt"
+		// .getSimpleName() removes the extension of a file
+	"""
+	grep -o "GCCGCG" ${fastafile} | wc -l > ${fastafile.getSimpleName()}_repeatcount.txt
+	"""
+}
+
+process makeSummary {
+	publishDir params.out, mode: "copy", overwrite:true
+	input:
+		path inputfile
+	output:
+		path "summary.csv"
+	"""
+	for f in \$(ls seq*count.txt); do echo -n "\$f, "; cat \$f; done >summary.csv
+	"""
 }
 
 //here define the workflow
 workflow {
-	downloadChannel = downloadFile()
-	countSeqs(downloadChannel)
-	splitFasta(downloadChannel)
-	// you can also write it in pipes: downloadFile | countSeqs
-	// pipes only work if you do not need the output of one process for more than 1 other process as input
+	downloadFile | splitSeqs | flatten | countRepeats | collect | makeSummary
 }
