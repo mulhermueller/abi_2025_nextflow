@@ -44,11 +44,15 @@ process countRepeats{
 process makeSummary {
 	publishDir params.out, mode: "copy", overwrite:true
 	input:
-		path inputfile
+		path inputfiles
 	output:
 		path "summary.csv"
 	"""
-	for f in \$(ls seq*count.txt); do echo -n "\$f, "; cat \$f; done >summary.csv
+	for f in \$(ls seq*count.txt); do 
+		echo -n "\$f" | cut -d "_" -f 1,2 |tr -d "\n"; 
+		echo -n ": "; 
+		cat \$f; 
+	done >summary.csv
 	"""
 }
 
