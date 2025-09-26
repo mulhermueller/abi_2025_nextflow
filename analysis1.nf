@@ -48,12 +48,15 @@ process makeSummary {
 	output:
 		path "summary.csv"
 	"""
-	for f in \$(ls seq*count.txt); do 
+	for f in ${inputfiles}; do 
 		echo -n "\$f" | cut -d "_" -f 1,2 |tr -d "\n"; 
 		echo -n ": "; 
 		cat \$f; 
-	done >summary.csv
+	done > summary_unsorted.csv 
+	cat summary_unsorted.csv| sort > summary.csv
 	"""
+	// nextflow $ is different from $ in bash, 
+	// $for bash need to be escaped by the \ before, so that nextflow does not interpret it as $ for nextflow
 }
 
 //here define the workflow
