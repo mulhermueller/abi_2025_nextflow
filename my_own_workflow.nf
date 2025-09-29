@@ -18,9 +18,9 @@ process splitSeqs {
     input:
         path inputfile
     output:
-        path "x*.txt"
+        path "*.txt"
     """
-    tail -n +3 ${inputfile}| split -l 1 --additional-suffix ".txt" -d
+    tail -n +3 ${inputfile}| split -l 1 -d --additional-suffix ".txt" 
     """
     //alternative
     //grep -ve "^@" ${inputfile} | split -l 1 --additional-suffix ".txt" -d
@@ -95,7 +95,7 @@ workflow {
         c_download=downloadFile()
     } 
     else if(params.inDir != null && params.inURL == null){
-        c_download=channel.fromPath("{params.inDir}/*.sam")
+        c_download=channel.fromPath("${params.inDir}/*.sam")
     } else {
         print "Error: Please provide either --inDir or --inURL"
         System.exit(0)
